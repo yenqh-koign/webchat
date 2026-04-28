@@ -8,7 +8,6 @@ a = Analysis(
     datas=[
         ('templates', 'templates'),
         ('static', 'static'),
-        ('.env', '.'),  # 包含环境变量配置文件
     ],
     hiddenimports=[
         'engineio.async_drivers.threading',
@@ -30,7 +29,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='app',
+    name='WebChat',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
