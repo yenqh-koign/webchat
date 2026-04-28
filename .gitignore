@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+dist/
+build/
+
+# 环境变量（包含敏感信息）
+.env
+.env.*
+!.env.example
+
+# 数据库
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+instance/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Agent / local notes
+CLAUDE.md
+docs/
+
+# 本地上传文件和用户数据
+uploads/
+static/uploads/
+
+# 日志
+*.log

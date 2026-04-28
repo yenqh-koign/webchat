@@ -1,0 +1,8 @@
+Flask
+Flask-SocketIO
+Flask-Cors
+Flask-SQLAlchemy
+SQLAlchemy
+python-dotenv
+Pillow
+bcrypt

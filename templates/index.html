@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <title>简易聊天室</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- ========== Login Container ========== -->
+    <div id="login-container">
+        <div style="position:absolute;top:16px;right:16px;">
+            <button id="login-theme-toggle" style="width:36px;height:36px;padding:0;background:transparent;border:none;color:var(--text-secondary);border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;" title="切换主题"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+        </div>
+        <h1 style="font-family:var(--font-heading);font-size:28px;font-weight:700;margin-bottom:4px;color:var(--primary);">WebChat</h1>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px;">欢迎来到简易聊天室</p>
+
+        <div class="login-tabs">
+            <button class="tab-btn active" data-tab="guest">访客</button>
+            <button class="tab-btn" data-tab="login">登录</button>
+            <button class="tab-btn" data-tab="register">注册</button>
+        </div>
+
+        <!-- Guest Panel -->
+        <div id="guest-panel" class="login-panel active">
+            <input type="text" id="guest-username-input" placeholder="输入你的昵称..." maxlength="20" autocomplete="off">
+            <button id="guest-login-btn" class="btn-primary">进入聊天</button>
+        </div>
+
+        <!-- Login Panel -->
+        <div id="login-panel" class="login-panel">
+            <div class="form-group">
+                <label for="login-username">用户名</label>
+                <input type="text" id="login-username" placeholder="请输入用户名" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="login-password">密码</label>
+                <input type="password" id="login-password" placeholder="请输入密码" autocomplete="current-password">
+            </div>
+            <div class="form-group checkbox">
+                <label><input type="checkbox" id="remember-me"><span>记住我</span></label>
+            </div>
+            <button id="login-btn" class="btn-primary">登录</button>
+            <div class="login-footer">
+                <a href="#" id="forgot-password-link">忘记密码?</a>
+            </div>
+        </div>
+
+        <!-- Register Panel -->
+        <div id="register-panel" class="login-panel">
+            <div class="form-group">
+                <label for="register-username">用户名</label>
+                <input type="text" id="register-username" placeholder="请输入用户名" maxlength="20" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="register-email">邮箱</label>
+                <input type="email" id="register-email" placeholder="请输入邮箱" autocomplete="email">
+            </div>
+            <div class="form-group" id="register-code-group">
+                <label for="register-code">验证码</label>
+                <div class="input-with-button">
+                    <input type="text" id="register-code" placeholder="输入验证码" autocomplete="off">
+                    <button id="send-code-btn" class="btn-secondary" style="white-space:nowrap;">发送验证码</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="register-password">密码</label>
+                <input type="password" id="register-password" placeholder="至少 8 位" autocomplete="new-password">
+            </div>
+            <button id="register-btn" class="btn-primary">注册</button>
+        </div>
+
+        <!-- Forgot Password Panel -->
+        <div id="forgot-password-panel" class="login-panel">
+            <h2>重置密码</h2>
+            <p class="hint">输入注册邮箱，我们将发送重置链接</p>
+            <div class="form-group">
+                <label for="forgot-email">邮箱</label>
+                <input type="email" id="forgot-email" placeholder="请输入邮箱" autocomplete="email">
+            </div>
+            <button id="send-reset-btn" class="btn-primary">发送重置链接</button>
+            <div class="login-footer">
+                <a href="#" id="back-to-login-link">返回登录</a>
+            </div>
+        </div>
+
+        <!-- Legacy input (hidden, kept for compatibility) -->
+        <input type="hidden" id="username-input">
+    </div>
+
+    <!-- ========== App Container ========== -->
+    <div id="app-container" class="hidden">
+        <!-- Sidebar Overlay (mobile) -->
+        <div id="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <span id="sidebar-welcome">用户</span>
+                <button id="general-chat-btn" class="hidden">返回大厅</button>
+            </div>
+
+            <!-- Online Users Section -->
+            <div class="sidebar-section">
+                <div class="section-header" data-section="users">
+                    <span class="section-toggle">▼</span>
+                    <h3>在线用户 <span id="online-count" class="online-count">(0)</span></h3>
+                </div>
+                <div id="users-section" class="section-content">
+                    <ul id="user-list"></ul>
+                </div>
+            </div>
+
+            <!-- Private Chats Section -->
+            <div class="sidebar-section">
+                <div class="section-header" data-section="private">
+                    <span class="section-toggle">▼</span>
+                    <h3>私聊</h3>
+                    <button class="section-add-btn" id="add-private-btn" title="添加私聊">+</button>
+                </div>
+                <div id="private-section" class="section-content">
+                    <ul id="private-list"></ul>
+                </div>
+            </div>
+
+            <!-- Groups Section -->
+            <div class="sidebar-section">
+                <div class="section-header" data-section="groups">
+                    <span class="section-toggle">▼</span>
+                    <h3>群聊</h3>
+                    <button class="section-add-btn" id="create-group-btn" title="创建群聊">+</button>
+                </div>
+                <div id="groups-section" class="section-content">
+                    <ul id="group-list"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div id="chat-container">
+            <div id="chat-header">
+                <div id="chat-header-left">
+                    <button id="mobile-menu-btn" title="菜单">☰</button>
+                    <div id="chat-header-info">
+                        <span id="chat-title">公共聊天室</span>
+                        <span id="chat-subtitle"></span>
+                    </div>
+                </div>
+                <div id="chat-header-right">
+                    <span id="welcome-message"></span>
+                    <button id="view-members-btn" class="hidden" title="查看成员">👥</button>
+                    <button id="theme-toggle-btn" title="切换主题"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+                    <button id="settings-btn" title="设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+                    <button id="logout-btn">退出</button>
+                </div>
+            </div>
+
+            <div id="typing-indicator" class="hidden"></div>
+            <div id="messages"></div>
+
+            <!-- Reply Preview -->
+            <div id="reply-preview" class="hidden">
+                <span id="reply-text"></span>
+                <button id="cancel-reply-btn">取消</button>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="progress-container" class="hidden">
+                <div id="progress-bar"></div>
+            </div>
+
+            <!-- Input Area -->
+            <div id="input-area">
+                <button id="image-btn" title="发送图片"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button>
+                <input type="file" id="image-input" accept="image/*" class="hidden">
+                <input type="text" id="message-input" placeholder="输入消息..." autocomplete="off">
+                <button id="send-btn">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== Modals ========== -->
+
+    <!-- Image Preview Modal -->
+    <div id="image-modal" class="modal hidden">
+        <span class="close-modal">&times;</span>
+        <img id="modal-image" src="" alt="Preview">
+    </div>
+
+    <!-- Create Group Modal -->
+    <div id="group-modal" class="modal hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>创建群聊</h3>
+                <button class="close-modal-btn" id="close-group-modal">&times;</button>
+            </div>
+            <p class="modal-hint">输入群聊名称来创建或加入已有群聊</p>
+            <div class="modal-body">
+                <input type="text" id="group-name-input" placeholder="群聊名称..." autocomplete="off">
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-group-btn" class="btn-secondary">取消</button>
+                <button id="confirm-group-btn" class="btn-primary" style="width:auto;">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Private Chat Modal -->
+    <div id="private-modal" class="modal hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>发起私聊</h3>
+                <button class="close-modal-btn" id="close-private-modal">&times;</button>
+            </div>
+            <p class="modal-hint">输入对方的用户名开始私聊</p>
+            <div class="modal-body">
+                <input type="text" id="private-user-input" placeholder="用户名..." autocomplete="off">
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-private-btn" class="btn-secondary">取消</button>
+                <button id="confirm-private-btn" class="btn-primary" style="width:auto;">开始私聊</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Dialog Modal -->
+    <div id="confirm-modal" class="modal hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="confirm-modal-title">确认操作</h3>
+                <button class="close-modal-btn" id="close-confirm-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-modal-message" class="confirm-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-cancel-btn" class="btn-secondary">取消</button>
+                <button id="confirm-ok-btn" class="btn-danger">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete History Dialog Modal -->
+    <div id="delete-history-modal" class="modal hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>退出群聊</h3>
+                <button class="close-modal-btn" id="close-delete-history-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-message">您是群聊 "<span id="delete-history-group-name"></span>" 的最后一位成员。</p>
+                <p class="confirm-message" style="margin-top:8px;">退出后是否删除所有聊天记录？</p>
+            </div>
+            <div class="modal-footer modal-footer-three">
+                <button id="delete-history-cancel-btn" class="btn-secondary">取消</button>
+                <button id="delete-history-keep-btn" class="btn-primary" style="width:auto;">保留记录</button>
+                <button id="delete-history-delete-btn" class="btn-danger">删除记录</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h3>设置</h3>
+                <button class="close-settings">&times;</button>
+            </div>
+            <div class="settings-body">
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="pref-sound" checked>
+                        <span>声音提示</span>
+                    </label>
+                    <p class="setting-desc">收到新消息时播放提示音</p>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <span>音量大小</span>
+                        <span id="volume-value">100%</span>
+                    </label>
+                    <input type="range" id="pref-volume" min="0" max="100" value="100" class="volume-slider">
+                    <button type="button" id="test-sound-btn" class="test-sound-btn">测试声音</button>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="pref-browser" checked>
+                        <span>浏览器通知</span>
+                    </label>
+                    <p class="setting-desc">在桌面显示通知弹窗</p>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="pref-title-flash" checked>
+                        <span>标题闪烁</span>
+                    </label>
+                    <p class="setting-desc">有新消息时页面标题闪烁提醒</p>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="pref-vibrate" checked>
+                        <span>振动提醒</span>
+                    </label>
+                    <p class="setting-desc">移动端收到新消息时振动提醒</p>
+                </div>
+                <div class="setting-item">
+                    <label><span>色彩方案</span></label>
+                    <p class="setting-desc">选择界面主色调</p>
+                    <div class="color-scheme-options">
+                        <button class="scheme-btn active" data-scheme="violet" title="薰衣草"><span class="scheme-dot" style="background:#b4a0d8;"></span></button>
+                        <button class="scheme-btn" data-scheme="rose" title="玫瑰"><span class="scheme-dot" style="background:#e4a0b7;"></span></button>
+                        <button class="scheme-btn" data-scheme="ocean" title="海洋"><span class="scheme-dot" style="background:#8fc1d4;"></span></button>
+                        <button class="scheme-btn" data-scheme="mint" title="薄荷"><span class="scheme-dot" style="background:#8dc9a6;"></span></button>
+                        <button class="scheme-btn" data-scheme="peach" title="蜜桃"><span class="scheme-dot" style="background:#e8b89a;"></span></button>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-footer">
+                <button id="save-settings-btn">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Members Modal -->
+    <div id="group-members-modal" class="modal hidden">
+        <div class="modal-dialog members-dialog">
+            <div class="modal-header">
+                <h3>群聊成员 <span id="members-count-badge"></span></h3>
+                <button class="close-modal-btn" id="close-members-modal">&times;</button>
+            </div>
+            <div class="modal-body members-body">
+                <ul id="members-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div id="alert-modal" class="modal hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="alert-modal-title">提示</h3>
+                <button class="close-modal-btn" id="close-alert-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="alert-modal-message" class="confirm-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="alert-ok-btn" class="btn-primary" style="width:auto;">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== Scripts ========== -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io();
+
+            // --- DOM Element References ---
+            const loginContainer = document.getElementById('login-container');
+            const appContainer = document.getElementById('app-container');
+            const chatContainer = document.getElementById('chat-container');
+            const userList = document.getElementById('user-list');
+            const privateList = document.getElementById('private-list');
+            const groupList = document.getElementById('group-list');
+            const createGroupBtn = document.getElementById('create-group-btn');
+            const addPrivateBtn = document.getElementById('add-private-btn');
+            const chatTitle = document.getElementById('chat-title');
+            const chatSubtitle = document.getElementById('chat-subtitle');
+            const generalChatBtn = document.getElementById('general-chat-btn');
+            const usernameInput = document.getElementById('username-input');
+            const loginBtn = document.getElementById('login-btn');
+
+            const guestLoginBtn = document.getElementById('guest-login-btn');
+            const guestUsernameInput = document.getElementById('guest-username-input');
+            const registerBtn = document.getElementById('register-btn');
+            const registerUsername = document.getElementById('register-username');
+            const registerEmail = document.getElementById('register-email');
+            const registerCode = document.getElementById('register-code');
+            const registerPassword = document.getElementById('register-password');
+            const sendCodeBtn = document.getElementById('send-code-btn');
+            const loginUsernameInput = document.getElementById('login-username');
+            const loginPasswordInput = document.getElementById('login-password');
+            const rememberMeCheckbox = document.getElementById('remember-me');
+            const forgotPasswordLink = document.getElementById('forgot-password-link');
+            const backToLoginLink = document.getElementById('back-to-login-link');
+            const sendResetBtn = document.getElementById('send-reset-btn');
+            const forgotEmail = document.getElementById('forgot-email');
+            const logoutBtn = document.getElementById('logout-btn');
+            const welcomeMessage = document.getElementById('welcome-message');
+            const sidebarWelcome = document.getElementById('sidebar-welcome');
+            const onlineCount = document.getElementById('online-count');
+            const messagesDiv = document.getElementById('messages');
+            const messageInput = document.getElementById('message-input');
+            const sendBtn = document.getElementById('send-btn');
+            const replyPreview = document.getElementById('reply-preview');
+            const replyText = document.getElementById('reply-text');
+            const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+            const imageBtn = document.getElementById('image-btn');
+            const imageInput = document.getElementById('image-input');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const imageModal = document.getElementById('image-modal');
+            const modalImage = document.getElementById('modal-image');
+            const closeModal = document.querySelector('.close-modal');
+            const settingsBtn = document.getElementById('settings-btn');
+            const settingsModal = document.getElementById('settings-modal');
+            const closeSettings = document.querySelector('.close-settings');
+            const prefSound = document.getElementById('pref-sound');
+            const prefVolume = document.getElementById('pref-volume');
+            const volumeValue = document.getElementById('volume-value');
+            const testSoundBtn = document.getElementById('test-sound-btn');
+            const prefBrowser = document.getElementById('pref-browser');
+            const prefTitleFlash = document.getElementById('pref-title-flash');
+            const prefVibrate = document.getElementById('pref-vibrate');
+            const saveSettingsBtn = document.getElementById('save-settings-btn');
+            const typingIndicator = document.getElementById('typing-indicator');
+            const groupModal = document.getElementById('group-modal');
+            const groupNameInput = document.getElementById('group-name-input');
+            const closeGroupModal = document.getElementById('close-group-modal');
+            const cancelGroupBtn = document.getElementById('cancel-group-btn');
+            const confirmGroupBtn = document.getElementById('confirm-group-btn');
+            const privateModal = document.getElementById('private-modal');
+            const privateUserInput = document.getElementById('private-user-input');
+            const closePrivateModal = document.getElementById('close-private-modal');
+            const cancelPrivateBtn = document.getElementById('cancel-private-btn');
+            const confirmPrivateBtn = document.getElementById('confirm-private-btn');
+            const confirmModal = document.getElementById('confirm-modal');
+            const confirmModalTitle = document.getElementById('confirm-modal-title');
+            const confirmModalMessage = document.getElementById('confirm-modal-message');
+            const closeConfirmModal = document.getElementById('close-confirm-modal');
+            const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+            const confirmOkBtn = document.getElementById('confirm-ok-btn');
+            const deleteHistoryModal = document.getElementById('delete-history-modal');
+            const deleteHistoryGroupName = document.getElementById('delete-history-group-name');
+            const closeDeleteHistoryModal = document.getElementById('close-delete-history-modal');
+            const deleteHistoryCancelBtn = document.getElementById('delete-history-cancel-btn');
+            const deleteHistoryKeepBtn = document.getElementById('delete-history-keep-btn');
+            const deleteHistoryDeleteBtn = document.getElementById('delete-history-delete-btn');
+            const viewMembersBtn = document.getElementById('view-members-btn');
+            const groupMembersModal = document.getElementById('group-members-modal');
+            const closeMembersModal = document.getElementById('close-members-modal');
+            const membersList = document.getElementById('members-list');
+            const membersCountBadge = document.getElementById('members-count-badge');
+            const alertModal = document.getElementById('alert-modal');
+            const alertModalTitle = document.getElementById('alert-modal-title');
+            const alertModalMessage = document.getElementById('alert-modal-message');
+            const closeAlertModal = document.getElementById('close-alert-modal');
+            const alertOkBtn = document.getElementById('alert-ok-btn');
+
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+
+            // --- Theme & Color Scheme ---
+            const svgMoon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+            const svgSun = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+            function applyTheme(theme, smooth) {
+                if (smooth) {
+                    document.documentElement.classList.add('theme-transitioning');
+                    // Overlay to soften the flash when switching dark→light
+                    const overlay = document.createElement('div');
+                    overlay.className = 'theme-overlay';
+                    overlay.style.background = theme === 'light' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.25)';
+                    overlay.style.opacity = '1';
+                    document.body.appendChild(overlay);
+                    requestAnimationFrame(() => {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => { overlay.remove(); }, 650);
+                    });
+                    setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 500);
+                }
+                document.documentElement.setAttribute('data-theme', theme);
+                document.body.setAttribute('data-theme', theme);
+                const icon = theme === 'light' ? svgSun : svgMoon;
+                if (themeToggleBtn) themeToggleBtn.innerHTML = icon;
+                const ltBtn = document.getElementById('login-theme-toggle');
+                if (ltBtn) ltBtn.innerHTML = icon;
+                localStorage.setItem('chatTheme', theme);
+            }
+
+            function applyColorScheme(scheme) {
+                document.documentElement.setAttribute('data-color-scheme', scheme);
+                document.body.setAttribute('data-color-scheme', scheme);
+                localStorage.setItem('chatColorScheme', scheme);
+                document.querySelectorAll('.scheme-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.scheme === scheme);
+                });
+            }
+
+            // Load saved theme & scheme
+            const savedTheme = localStorage.getItem('chatTheme') || 'light';
+            applyTheme(savedTheme, false);
+            const savedScheme = localStorage.getItem('chatColorScheme') || 'violet';
+            applyColorScheme(savedScheme);
+
+            const loginThemeToggle = document.getElementById('login-theme-toggle');
+
+            function handleThemeToggle() {
+                const current = document.documentElement.getAttribute('data-theme') || 'light';
+                applyTheme(current === 'dark' ? 'light' : 'dark', true);
+            }
+
+            if (themeToggleBtn) themeToggleBtn.addEventListener('click', handleThemeToggle);
+            if (loginThemeToggle) loginThemeToggle.addEventListener('click', handleThemeToggle);
+
+            // Color scheme selector
+            document.querySelectorAll('.scheme-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    applyColorScheme(btn.dataset.scheme);
+                });
+            });
+
+            // --- State Management ---
+            let username = '';
+            let userId = null;
+            let replyToMessage = null;
+            let currentChat = { type: 'general', room: 'general', name: '公共聊天室', targetUser: null };
+            const chatHistories = { 'general': [] };
+            let unreadCounts = { private: {} };
+            let groupUnreadCounts = {};
+            let publicUnreadCount = 0;
+            let onlineUsers = [];
+            let privateChats = [];
+            let pendingLeaveGroup = null;
+            let typingTimeout = null;
+            let confirmCallback = null;
+            let isMobile = window.innerWidth <= 768;
+            let emailVerificationEnabled = true; // default, will be fetched
+
+            // --- Fetch auth config ---
+            (async () => {
+                try {
+                    const resp = await fetch('/api/auth/config');
+                    const cfg = await resp.json();
+                    emailVerificationEnabled = cfg.email_verification_enabled;
+                    if (!emailVerificationEnabled) {
+                        const emailGroup = registerEmail ? registerEmail.closest('.form-group') : null;
+                        const codeGroup = document.getElementById('register-code-group');
+                        if (emailGroup) emailGroup.classList.add('hidden');
+                        if (codeGroup) codeGroup.classList.add('hidden');
+                    }
+                } catch (e) { console.error('获取认证配置失败:', e); }
+            })();
+
+            // --- Mobile Sidebar ---
+            function openSidebar() {
+                sidebar.classList.add('open');
+                sidebarOverlay.classList.add('visible');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                sidebarOverlay.classList.remove('visible');
+                document.body.style.overflow = '';
+            }
+
+            function checkMobile() {
+                isMobile = window.innerWidth <= 768;
+                if (!isMobile) closeSidebar();
+            }
+
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+            });
+            sidebarOverlay.addEventListener('click', closeSidebar);
+            window.addEventListener('resize', checkMobile);
+
+            // --- Virtual Keyboard Handler ---
+            const keyboardHandler = {
+                isKeyboardOpen: false,
+                lastViewportHeight: 0,
+                resizeRafId: null,
+                init() {
+                    if (!window.visualViewport) { this.initFallback(); return; }
+                    this.lastViewportHeight = window.visualViewport.height;
+                    window.visualViewport.addEventListener('resize', () => this.handleViewportResize());
+                    window.visualViewport.addEventListener('scroll', () => this.handleViewportScroll());
+                    this.setupInputListeners();
+                    this.updateCSSVariables();
+                },
+                initFallback() {
+                    this.setupInputListeners();
+                    window.addEventListener('resize', () => this.updateCSSVariables());
+                },
+                setupInputListeners() {
+                    const inputs = [
+                        document.getElementById('message-input'),
+                        document.getElementById('username-input'),
+                        document.getElementById('group-name-input'),
+                        document.getElementById('private-user-input')
+                    ].filter(el => el !== null);
+                    inputs.forEach(input => {
+                        input.addEventListener('focus', (e) => this.handleInputFocus(e));
+                        input.addEventListener('blur', (e) => this.handleInputBlur(e));
+                    });
+                },
+                handleViewportResize() {
+                    if (this.resizeRafId) cancelAnimationFrame(this.resizeRafId);
+                    this.resizeRafId = requestAnimationFrame(() => {
+                        const viewport = window.visualViewport;
+                        const currentHeight = viewport.height;
+                        const windowHeight = window.innerHeight;
+                        const keyboardHeight = windowHeight - currentHeight - viewport.offsetTop;
+                        const wasOpen = this.isKeyboardOpen;
+                        this.isKeyboardOpen = keyboardHeight > 100;
+                        this.updateCSSVariables();
+                        if (this.isKeyboardOpen !== wasOpen) {
+                            if (this.isKeyboardOpen) {
+                                document.body.classList.add('keyboard-open');
+                                this.scrollToBottom();
+                            } else {
+                                document.body.classList.remove('keyboard-open');
+                            }
+                        } else if (this.isKeyboardOpen) {
+                            this.scrollToBottom();
+                        }
+                        this.lastViewportHeight = currentHeight;
+                    });
+                },
+                handleViewportScroll() { this.updateCSSVariables(); },
+                updateCSSVariables() {
+                    const root = document.documentElement;
+                    if (window.visualViewport) {
+                        const viewport = window.visualViewport;
+                        const keyboardHeight = window.innerHeight - viewport.height - viewport.offsetTop;
+                        root.style.setProperty('--visual-viewport-height', `${viewport.height}px`);
+                        root.style.setProperty('--keyboard-height', `${Math.max(0, keyboardHeight)}px`);
+                    } else {
+                        root.style.setProperty('--visual-viewport-height', `${window.innerHeight}px`);
+                        root.style.setProperty('--keyboard-height', '0px');
+                    }
+                },
+                handleInputFocus(event) {
+                    setTimeout(() => {
+                        this.updateCSSVariables();
+                        this.scrollToFocusedInput();
+                        this.scrollToBottom();
+                    }, 300);
+                    setTimeout(() => this.scrollToBottom(), 600);
+                },
+                handleInputBlur(event) {
+                    setTimeout(() => {
+                        const activeElement = document.activeElement;
+                        const isInputFocused = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA');
+                        if (!isInputFocused) {
+                            document.body.classList.remove('keyboard-open');
+                            this.updateCSSVariables();
+                        }
+                    }, 150);
+                },
+                scrollToBottom() {
+                    const md = document.getElementById('messages');
+                    if (md) md.scrollTop = md.scrollHeight;
+                },
+                scrollToFocusedInput() {
+                    const activeElement = document.activeElement;
+                    if (!activeElement || (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA')) return;
+                    const modal = activeElement.closest('.modal');
+                    if (modal) { this.scrollModalInput(activeElement, modal); }
+                },
+                scrollModalInput(input, modal) {
+                    setTimeout(() => { input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }); }, 100);
+                }
+            };
+            keyboardHandler.init();
+
+            // --- Custom Confirm Dialog ---
+            function showConfirmDialog(title, message, onConfirm) {
+                confirmModalTitle.textContent = title;
+                confirmModalMessage.textContent = message;
+                confirmCallback = onConfirm;
+                confirmModal.classList.remove('hidden');
+            }
+            function hideConfirmDialog() {
+                confirmModal.classList.add('hidden');
+                confirmCallback = null;
+            }
+            closeConfirmModal.addEventListener('click', hideConfirmDialog);
+            confirmCancelBtn.addEventListener('click', hideConfirmDialog);
+            confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) hideConfirmDialog(); });
+            confirmOkBtn.addEventListener('click', () => { if (confirmCallback) confirmCallback(); hideConfirmDialog(); });
+
+            // --- Delete History Dialog ---
+            function showDeleteHistoryDialog(groupName) {
+                deleteHistoryGroupName.textContent = groupName;
+                deleteHistoryModal.classList.remove('hidden');
+            }
+            function hideDeleteHistoryDialog() {
+                deleteHistoryModal.classList.add('hidden');
+                pendingLeaveGroup = null;
+            }
+            closeDeleteHistoryModal.addEventListener('click', hideDeleteHistoryDialog);
+            deleteHistoryCancelBtn.addEventListener('click', hideDeleteHistoryDialog);
+            deleteHistoryModal.addEventListener('click', (e) => { if (e.target === deleteHistoryModal) hideDeleteHistoryDialog(); });
+            deleteHistoryKeepBtn.addEventListener('click', () => {
+                if (pendingLeaveGroup) socket.emit('leave group', { group_name: pendingLeaveGroup, delete_history: false });
+                hideDeleteHistoryDialog();
+            });
+            deleteHistoryDeleteBtn.addEventListener('click', () => {
+                if (pendingLeaveGroup) socket.emit('leave group', { group_name: pendingLeaveGroup, delete_history: true });
+                hideDeleteHistoryDialog();
+            });
+
+            // --- Group Members Modal ---
+            function showMembersModal() {
+                if (currentChat.type === 'group') {
+                    socket.emit('get group members', { group_name: currentChat.name });
+                    groupMembersModal.classList.remove('hidden');
+                }
+            }
+            function hideMembersModal() { groupMembersModal.classList.add('hidden'); }
+            viewMembersBtn.addEventListener('click', showMembersModal);
+            closeMembersModal.addEventListener('click', hideMembersModal);
+            groupMembersModal.addEventListener('click', (e) => { if (e.target === groupMembersModal) hideMembersModal(); });
+
+            // --- Custom Alert ---
+            function showAlert(message, title = '提示') {
+                alertModalTitle.textContent = title;
+                alertModalMessage.textContent = message;
+                alertModal.classList.remove('hidden');
+            }
+            function hideAlert() { alertModal.classList.add('hidden'); }
+            closeAlertModal.addEventListener('click', hideAlert);
+            alertOkBtn.addEventListener('click', hideAlert);
+            alertModal.addEventListener('click', (e) => { if (e.target === alertModal) hideAlert(); });
+
+            // --- Notification Manager ---
+            const notificationManager = {
+                preferences: { sound: true, volume: 100, browser: true, titleFlash: true, vibrate: true },
+                originalTitle: document.title,
+                flashInterval: null,
+                unreadCount: 0,
+                isPageVisible: true,
+                notificationSound: null,
+                audioContext: null,
+                gainNode: null,
+                audioBuffer: null,
+                audioUnlocked: false,
+                isMobileDevice: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+
+                init() {
+                    this.initSound();
+                    this.requestPermission();
+                    this.initVisibilityListener();
+                    this.loadPreferences();
+                    this.initAudioUnlock();
+                },
+                initSound() {
+                    try {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        this.gainNode = this.audioContext.createGain();
+                        this.gainNode.connect(this.audioContext.destination);
+                        this.createNotificationBeep();
+                    } catch (e) {
+                        this.notificationSound = new Audio();
+                        this.notificationSound.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+ZjHdwaW2Dkp+fnpOCdG1xfYyam5qShXhxc3yJlpmZlIh8dXZ7hpGVlZKLgHl3eYONkpKQi4N9enx/iI2PjouGgn5+gIWJjIyKhoOAf4GEh4qKiIWCgICAgoWHh4aEgoCAgoOFhoaFg4GAgYKDhIWEg4KBgYGCg4OEg4OCgYGBgoKDg4OCgoGBgYKCgoKCgoGBgYGCgoKCgoKBgYGBgoKCgoKCgYGBgYKCgoKCgoGBgYGBgoKCgoKBgYGBgYKCgoKCgYGBgYGBgoKCgoGBgYGBgYGCgoKCgYGBgYGBgYKCgoGBgYGBgYGBgoKCgYGBgYGBgYGCgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYA=';
+                    }
+                    this.updateVolume(this.preferences.volume);
+                },
+                createNotificationBeep() {
+                    if (!this.audioContext) return;
+                    const sr = this.audioContext.sampleRate;
+                    const dur = 0.35;
+                    const len = Math.floor(sr * dur);
+                    this.audioBuffer = this.audioContext.createBuffer(1, len, sr);
+                    const d = this.audioBuffer.getChannelData(0);
+                    // QQ-style two-tone chime
+                    const n1 = 880, n2 = 1175, nd = 0.1, gap = 0.04;
+                    for (let i = 0; i < len; i++) {
+                        const t = i / sr;
+                        let v = 0;
+                        if (t < nd) {
+                            const e = Math.sin(Math.PI * t / nd);
+                            v = Math.sin(2 * Math.PI * n1 * t) * e * 0.45 + Math.sin(2 * Math.PI * n1 * 2 * t) * e * 0.1;
+                        } else if (t >= nd + gap && t < nd + gap + nd) {
+                            const e = Math.sin(Math.PI * (t - nd - gap) / nd);
+                            v = Math.sin(2 * Math.PI * n2 * t) * e * 0.45 + Math.sin(2 * Math.PI * n2 * 2 * t) * e * 0.1;
+                        } else if (t >= nd + gap + nd) {
+                            v = Math.sin(2 * Math.PI * n2 * t) * Math.exp(-(t - nd - gap - nd) * 18) * 0.15;
+                        }
+                        d[i] = v;
+                    }
+                },
+                updateVolume(volume) {
+                    this.preferences.volume = volume;
+                    if (this.gainNode) this.gainNode.gain.value = (volume / 100) * 4.0;
+                    if (this.notificationSound) this.notificationSound.volume = Math.min(1, volume / 100);
+                },
+                playNotificationSound() {
+                    if (this.audioContext && this.audioBuffer) {
+                        if (this.audioContext.state === 'suspended') this.audioContext.resume();
+                        const source = this.audioContext.createBufferSource();
+                        source.buffer = this.audioBuffer;
+                        source.connect(this.gainNode);
+                        source.start(0);
+                    } else if (this.notificationSound) {
+                        this.notificationSound.currentTime = 0;
+                        this.notificationSound.play().catch(() => {});
+                    }
+                },
+                testSound() { this.playNotificationSound(); },
+                initAudioUnlock() {
+                    const unlockAudio = () => {
+                        if (this.audioUnlocked) return;
+                        if (this.audioContext && this.audioContext.state === 'suspended') {
+                            this.audioContext.resume().then(() => { this.audioUnlocked = true; }).catch(() => {});
+                        } else if (this.audioContext) { this.audioUnlocked = true; }
+                        if (this.notificationSound) {
+                            const playPromise = this.notificationSound.play();
+                            if (playPromise !== undefined) {
+                                playPromise.then(() => { this.notificationSound.pause(); this.notificationSound.currentTime = 0; }).catch(() => {});
+                            }
+                        }
+                    };
+                    const events = ['click', 'touchstart', 'touchend', 'keydown'];
+                    const unlockHandler = () => {
+                        unlockAudio();
+                        if (this.audioUnlocked) events.forEach(event => document.removeEventListener(event, unlockHandler));
+                    };
+                    events.forEach(event => document.addEventListener(event, unlockHandler, { passive: true }));
+                },
+                initVisibilityListener() {
+                    document.addEventListener('visibilitychange', () => { this.isPageVisible = !document.hidden; if (this.isPageVisible) this.stopTitleFlash(); });
+                    window.addEventListener('focus', () => { this.isPageVisible = true; this.stopTitleFlash(); });
+                    window.addEventListener('blur', () => { if (!this.isMobileDevice) this.isPageVisible = false; });
+                    if (this.isMobileDevice) { window.addEventListener('pageshow', () => { this.isPageVisible = !document.hidden; }); }
+                },
+                async requestPermission() {
+                    if (!('Notification' in window)) return false;
+                    if (Notification.permission === 'granted') return true;
+                    if (Notification.permission !== 'denied') { const permission = await Notification.requestPermission(); return permission === 'granted'; }
+                    return false;
+                },
+                updatePreferences(prefs) {
+                    if (prefs.notification_sound !== undefined) this.preferences.sound = prefs.notification_sound;
+                    if (prefs.notification_volume !== undefined) this.updateVolume(prefs.notification_volume);
+                    if (prefs.notification_browser !== undefined) this.preferences.browser = prefs.notification_browser;
+                    if (prefs.notification_title_flash !== undefined) this.preferences.titleFlash = prefs.notification_title_flash;
+                    if (prefs.notification_vibrate !== undefined) this.preferences.vibrate = prefs.notification_vibrate;
+                    localStorage.setItem('notificationPreferences', JSON.stringify(this.preferences));
+                },
+                loadPreferences() {
+                    const saved = localStorage.getItem('notificationPreferences');
+                    if (saved) {
+                        try { const prefs = JSON.parse(saved); this.preferences = { ...this.preferences, ...prefs }; if (prefs.volume !== undefined) this.updateVolume(prefs.volume); }
+                        catch (e) { console.error('加载通知偏好失败:', e); }
+                    }
+                },
+                notify(options) {
+                    const isVisible = !document.hidden && this.isPageVisible;
+                    if (isVisible && options.isCurrentChat) return;
+                    if (this.preferences.sound) this.playSound();
+                    if (this.preferences.vibrate && this.isMobileDevice) this.vibrate();
+                    if (this.preferences.browser) this.showBrowserNotification(options);
+                    if (this.preferences.titleFlash && document.hidden) this.startTitleFlash(options.title || '新消息');
+                    this.incrementUnreadCount();
+                },
+                playSound() { this.playNotificationSound(); },
+                vibrate() { if ('vibrate' in navigator) { try { navigator.vibrate([200, 100, 200]); } catch (e) {} } },
+                showBrowserNotification(options) {
+                    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+                    try {
+                        const notification = new Notification(options.title || '新消息', { body: options.body || '', tag: options.room || 'chat-notification', silent: true });
+                        notification.onclick = () => { window.focus(); notification.close(); if (options.onClick) options.onClick(); };
+                        setTimeout(() => notification.close(), 5000);
+                    } catch (e) {}
+                },
+                startTitleFlash(message) {
+                    if (this.flashInterval) return;
+                    let isOriginal = true;
+                    const flashMessage = `【${message}】`;
+                    this.flashInterval = setInterval(() => { document.title = isOriginal ? flashMessage : this.originalTitle; isOriginal = !isOriginal; }, 1000);
+                },
+                stopTitleFlash() {
+                    if (this.flashInterval) { clearInterval(this.flashInterval); this.flashInterval = null; document.title = this.originalTitle; }
+                },
+                incrementUnreadCount() { this.unreadCount++; this.updateTitleWithCount(); },
+                setUnreadCount(count) { this.unreadCount = count; this.updateTitleWithCount(); },
+                clearUnreadCount() { this.unreadCount = 0; this.updateTitleWithCount(); },
+                updateTitleWithCount() {
+                    this.originalTitle = this.unreadCount > 0 ? `(${this.unreadCount}) 简易聊天室` : '简易聊天室';
+                    if (!this.flashInterval) document.title = this.originalTitle;
+                }
+            };
+            notificationManager.init();
+
+            // ========== Auth ==========
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.login-panel').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(`${btn.dataset.tab}-panel`).classList.add('active');
+                });
+            });
+
+            if (forgotPasswordLink) {
+                forgotPasswordLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.login-panel').forEach(p => p.classList.remove('active'));
+                    document.getElementById('forgot-password-panel').classList.add('active');
+                });
+            }
+            if (backToLoginLink) {
+                backToLoginLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.login-panel').forEach(p => p.classList.remove('active'));
+                    document.getElementById('login-panel').classList.add('active');
+                });
+            }
+
+            // Guest login
+            if (guestLoginBtn) {
+                const handleGuestLogin = async () => {
+                    const guestUsername = guestUsernameInput.value.trim();
+                    const validation = validateUsername(guestUsername);
+                    if (!validation.valid) { showAlert(validation.message, '登录失败'); return; }
+                    try {
+                        const response = await fetch('/api/auth/guest-login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: validation.name}) });
+                        const result = await response.json();
+                        if (result.success) {
+                            username = result.user.username;
+                            loginContainer.classList.add('hidden');
+                            appContainer.classList.remove('hidden');
+                            welcomeMessage.textContent = `欢迎, ${username}!`;
+                            sidebarWelcome.textContent = username;
+                            socket.emit('login', {username});
+                        } else {
+                            showAlert(result.message);
+                            if (result.require_password) { document.querySelector('.tab-btn[data-tab="login"]').click(); loginUsernameInput.value = guestUsername; }
+                        }
+                    } catch (error) { showAlert('登录失败，请重试'); console.error(error); }
+                };
+                guestLoginBtn.addEventListener('click', handleGuestLogin);
+                if (guestUsernameInput) guestUsernameInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleGuestLogin(); });
+            }
+
+            // Send verification code
+            let countdown = 0;
+            if (sendCodeBtn) {
+                sendCodeBtn.addEventListener('click', async () => {
+                    if (countdown > 0) return;
+                    const email = registerEmail.value.trim();
+                    if (!email || !email.includes('@')) { showAlert('请输入有效的邮箱地址'); return; }
+                    try {
+                        const response = await fetch('/api/auth/send-verification-code', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email}) });
+                        const result = await response.json();
+                        if (result.success) {
+                            showAlert('验证码已发送至您的邮箱');
+                            countdown = 60;
+                            const interval = setInterval(() => { sendCodeBtn.textContent = `${countdown}秒后重试`; countdown--; if (countdown < 0) { clearInterval(interval); sendCodeBtn.textContent = '发送验证码'; } }, 1000);
+                        } else { showAlert(result.message); }
+                    } catch (error) { showAlert('发送失败，请检查网络连接'); console.error(error); }
+                });
+            }
+
+            // Register
+            if (registerBtn) {
+                registerBtn.addEventListener('click', async () => {
+                    const data = { username: registerUsername.value.trim(), password: registerPassword.value };
+                    if (emailVerificationEnabled) {
+                        data.email = registerEmail.value.trim();
+                        data.code = registerCode.value.trim();
+                        if (!data.username || !data.email || !data.code || !data.password) { showAlert('请填写所有字段'); return; }
+                    } else {
+                        if (!data.username || !data.password) { showAlert('请填写用户名和密码'); return; }
+                    }
+                    if (data.password.length < 8) { showAlert('密码长度至少为 8 位'); return; }
+                    try {
+                        const response = await fetch('/api/auth/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+                        const result = await response.json();
+                        if (result.success) { showAlert('注册成功！请登录'); document.querySelector('.tab-btn[data-tab="login"]').click(); loginUsernameInput.value = data.username; }
+                        else { showAlert(result.message); }
+                    } catch (error) { showAlert('注册失败，请重试'); console.error(error); }
+                });
+            }
+
+            // Login (registered user)
+            if (loginBtn) {
+                const handleLoginSubmit = async () => {
+                    const data = { username: loginUsernameInput.value.trim(), password: loginPasswordInput.value, remember_me: rememberMeCheckbox.checked };
+                    if (!data.username || !data.password) { showAlert('请输入用户名和密码'); return; }
+                    try {
+                        const response = await fetch('/api/auth/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+                        const result = await response.json();
+                        if (result.success) {
+                            if (result.session_token) localStorage.setItem('sessionToken', result.session_token);
+                            username = result.user.username;
+                            loginContainer.classList.add('hidden');
+                            appContainer.classList.remove('hidden');
+                            welcomeMessage.textContent = `欢迎, ${username}!`;
+                            sidebarWelcome.textContent = username;
+                            socket.emit('login', {username, session_token: result.session_token});
+                        } else { showAlert(result.message); }
+                    } catch (error) { showAlert('登录失败，请重试'); console.error(error); }
+                };
+                loginBtn.addEventListener('click', handleLoginSubmit);
+                if (loginPasswordInput) loginPasswordInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleLoginSubmit(); });
+            }
+
+            // Auto-login
+            (async () => {
+                const sessionToken = localStorage.getItem('sessionToken');
+                if (sessionToken) {
+                    try {
+                        const response = await fetch('/api/auth/auto-login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_token: sessionToken}) });
+                        const result = await response.json();
+                        if (result.success) {
+                            username = result.user.username;
+                            loginContainer.classList.add('hidden');
+                            appContainer.classList.remove('hidden');
+                            welcomeMessage.textContent = `欢迎, ${username}!`;
+                            sidebarWelcome.textContent = username;
+                            socket.emit('login', {session_token: sessionToken});
+                        } else { localStorage.removeItem('sessionToken'); }
+                    } catch (error) { console.error('自动登录失败:', error); localStorage.removeItem('sessionToken'); }
+                }
+            })();
+
+            // Forgot password
+            if (sendResetBtn) {
+                sendResetBtn.addEventListener('click', async () => {
+                    const email = forgotEmail.value.trim();
+                    if (!email || !email.includes('@')) { showAlert('请输入有效的邮箱地址'); return; }
+                    try {
+                        const response = await fetch('/api/auth/forgot-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email}) });
+                        const result = await response.json();
+                        if (result.success) { showAlert('如果该邮箱已注册，重置链接已发送至您的邮箱'); if (backToLoginLink) backToLoginLink.click(); }
+                        else { showAlert(result.message); }
+                    } catch (error) { showAlert('发送失败，请重试'); console.error(error); }
+                });
+            }
+
+            // --- Event Listeners ---
+            logoutBtn.addEventListener('click', handleLogout);
+            generalChatBtn.addEventListener('click', () => switchChat('general'));
+
+            document.querySelectorAll('.section-header').forEach(header => {
+                header.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('section-add-btn')) return;
+                    const section = header.dataset.section;
+                    const content = document.getElementById(`${section}-section`);
+                    header.classList.toggle('collapsed');
+                    content.classList.toggle('collapsed');
+                });
+            });
+
+            addPrivateBtn.addEventListener('click', (e) => { e.stopPropagation(); privateUserInput.value = ''; privateModal.classList.remove('hidden'); privateUserInput.focus(); });
+            closePrivateModal.addEventListener('click', () => privateModal.classList.add('hidden'));
+            cancelPrivateBtn.addEventListener('click', () => privateModal.classList.add('hidden'));
+            privateModal.addEventListener('click', (e) => { if (e.target === privateModal) privateModal.classList.add('hidden'); });
+
+            function startPrivateChatFromModal() {
+                const targetUsername = privateUserInput.value.trim();
+                if (targetUsername && targetUsername !== username) { socket.emit('start private chat', { username: targetUsername }); privateModal.classList.add('hidden'); }
+                else if (targetUsername === username) { showAlert('不能与自己私聊'); }
+            }
+            confirmPrivateBtn.addEventListener('click', startPrivateChatFromModal);
+            privateUserInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') startPrivateChatFromModal(); else if (e.key === 'Escape') privateModal.classList.add('hidden'); });
+
+            createGroupBtn.addEventListener('click', (e) => { e.stopPropagation(); groupNameInput.value = ''; groupModal.classList.remove('hidden'); groupNameInput.focus(); });
+            closeGroupModal.addEventListener('click', () => groupModal.classList.add('hidden'));
+            cancelGroupBtn.addEventListener('click', () => groupModal.classList.add('hidden'));
+            groupModal.addEventListener('click', (e) => { if (e.target === groupModal) groupModal.classList.add('hidden'); });
+            confirmGroupBtn.addEventListener('click', () => { const groupName = groupNameInput.value.trim(); if (groupName) { socket.emit('create group', { group_name: groupName }); groupModal.classList.add('hidden'); } });
+            groupNameInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') { const groupName = groupNameInput.value.trim(); if (groupName) { socket.emit('create group', { group_name: groupName }); groupModal.classList.add('hidden'); } }
+                else if (e.key === 'Escape') { groupModal.classList.add('hidden'); }
+            });
+
+            // Settings
+            settingsBtn.addEventListener('click', () => {
+                prefSound.checked = notificationManager.preferences.sound;
+                prefBrowser.checked = notificationManager.preferences.browser;
+                prefTitleFlash.checked = notificationManager.preferences.titleFlash;
+                prefVibrate.checked = notificationManager.preferences.vibrate;
+                prefVolume.value = notificationManager.preferences.volume;
+                volumeValue.textContent = notificationManager.preferences.volume + '%';
+                settingsModal.classList.remove('hidden');
+            });
+            closeSettings.addEventListener('click', () => settingsModal.classList.add('hidden'));
+            settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.classList.add('hidden'); });
+            prefVolume.addEventListener('input', () => { const vol = prefVolume.value; volumeValue.textContent = vol + '%'; notificationManager.updateVolume(parseInt(vol)); });
+            testSoundBtn.addEventListener('click', () => notificationManager.testSound());
+            saveSettingsBtn.addEventListener('click', () => {
+                const prefs = { notification_sound: prefSound.checked, notification_volume: parseInt(prefVolume.value), notification_browser: prefBrowser.checked, notification_title_flash: prefTitleFlash.checked, notification_vibrate: prefVibrate.checked };
+                notificationManager.updatePreferences(prefs);
+                socket.emit('update preferences', prefs);
+                settingsModal.classList.add('hidden');
+            });
+
+            // Typing indicator
+            messageInput.addEventListener('input', () => {
+                if (currentChat.type !== 'general') {
+                    socket.emit('typing', { room: currentChat.room, typing: true });
+                    if (typingTimeout) clearTimeout(typingTimeout);
+                    typingTimeout = setTimeout(() => { socket.emit('typing', { room: currentChat.room, typing: false }); }, 3000);
+                }
+            });
+
+            // Send message
+            sendBtn.addEventListener('click', handleSendMessage);
+            messageInput.addEventListener('keyup', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
+            cancelReplyBtn.addEventListener('click', cancelReply);
+            imageBtn.addEventListener('click', () => imageInput.click());
+            imageInput.addEventListener('change', handleImageUpload);
+
+            // Paste image from clipboard
+            document.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (const item of items) { if (item.type.startsWith('image/')) { const file = item.getAsFile(); if (file) { sendImageFile(file); e.preventDefault(); return; } } }
+            });
+
+            // --- Socket.IO Listeners ---
+            socket.on('connect', () => {
+                console.log('Successfully connected to the server!');
+                // Reconnect: re-authenticate if already logged in
+                if (username) {
+                    const sessionToken = localStorage.getItem('sessionToken');
+                    if (sessionToken) {
+                        socket.emit('login', {username, session_token: sessionToken});
+                    } else {
+                        socket.emit('login', {username});
+                    }
+                } else {
+                    const savedUsername = localStorage.getItem('chatUsername');
+                    if (savedUsername) { username = savedUsername; showChat(); }
+                }
+            });
+
+            socket.on('login error', (data) => {
+                showAlert(data.message, '登录失败');
+                localStorage.removeItem('chatUsername');
+                username = '';
+                loginContainer.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+            });
+
+            socket.on('chat history', (history) => {
+                chatHistories['general'] = history;
+                if (currentChat.type === 'general') { messagesDiv.innerHTML = ''; history.forEach(msg => displayMessage(msg)); }
+            });
+
+            socket.on('chat message', (msg) => {
+                chatHistories['general'].push(msg);
+                if (currentChat.type === 'general') displayMessage(msg);
+                else if (msg.username !== username) { publicUnreadCount++; updateUnreadBadges(); }
+            });
+
+            socket.on('user list', (users) => {
+                onlineUsers = users;
+                onlineCount.textContent = `(${users.length})`;
+                userList.innerHTML = '';
+                users.forEach(otherUser => {
+                    if (otherUser === username) return;
+                    const li = document.createElement('li');
+                    li.dataset.username = otherUser;
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'user-name';
+                    nameSpan.textContent = otherUser;
+                    li.appendChild(nameSpan);
+                    li.addEventListener('click', () => { socket.emit('start private chat', { username: otherUser }); });
+                    userList.appendChild(li);
+                });
+                updateUnreadBadges();
+                updateChatSubtitle();
+                updatePrivateListStatus();
+            });
+
+            socket.on('private chat started', (data) => {
+                const { room, target_user, history } = data;
+                chatHistories[room] = history;
+                addToPrivateList(target_user);
+                switchChat('private', room, `与 ${target_user.username} 私聊`, target_user);
+            });
+
+            socket.on('private contacts', (contacts) => { privateChats = contacts; renderPrivateList(); });
+            socket.on('private contact added', (user) => { addToPrivateList(user); });
+            socket.on('private contact removed', (data) => { privateChats = privateChats.filter(u => u.username !== data.username); renderPrivateList(); });
+
+            socket.on('private message', (msg) => {
+                if (!chatHistories[msg.room]) chatHistories[msg.room] = [];
+                chatHistories[msg.room].push(msg);
+                if (currentChat.type === 'private' && currentChat.room === msg.room) displayMessage(msg);
+            });
+
+            socket.on('unread counts', (counts) => {
+                unreadCounts = counts;
+                updateUnreadBadges();
+                const totalUnread = Object.values(counts.private || {}).reduce((a, b) => a + b, 0);
+                notificationManager.setUnreadCount(totalUnread);
+            });
+
+            socket.on('new message notification', (data) => {
+                const isCurrentChat = currentChat.room === data.room;
+                notificationManager.notify({
+                    title: data.type === 'private' ? `${data.from_user} 发来私信` : `${data.group_name} 群消息`,
+                    body: data.preview, room: data.room, isCurrentChat: isCurrentChat,
+                    onClick: () => { if (data.type === 'private') socket.emit('start private chat', { username: data.from_user }); }
+                });
+            });
+
+            socket.on('preferences updated', (prefs) => { notificationManager.updatePreferences(prefs); if (prefs.id) userId = prefs.id; });
+
+            socket.on('user typing', (data) => {
+                if (currentChat.room === data.room) {
+                    if (data.typing) { typingIndicator.textContent = `${data.username} 正在输入...`; typingIndicator.classList.remove('hidden'); }
+                    else { typingIndicator.classList.add('hidden'); }
+                }
+            });
+
+            socket.on('messages read', (data) => { });
+
+            socket.on('group created', (data) => { addGroupToList(data.name); switchChat('group', data.room, data.name); });
+            socket.on('group joined', (data) => { addGroupToList(data.name); switchChat('group', data.room, data.name); });
+            socket.on('my groups', (groups) => { groups.forEach(groupName => addGroupToList(groupName)); });
+
+            socket.on('group left', (data) => {
+                const { group_name } = data;
+                const groupElement = document.querySelector(`#group-list li[data-groupname='${group_name}']`);
+                if (groupElement) groupElement.remove();
+                if (currentChat.type === 'group' && currentChat.name === group_name) switchChat('general');
+                const roomName = 'group-' + group_name;
+                if (chatHistories[roomName]) delete chatHistories[roomName];
+            });
+
+            socket.on('group member count', (data) => {
+                const { group_name, count } = data;
+                if (pendingLeaveGroup !== group_name) return;
+                if (count <= 1) { showDeleteHistoryDialog(group_name); }
+                else { showConfirmDialog('退出群聊', `您确定要退出群聊 "${group_name}" 吗？`, () => { socket.emit('leave group', { group_name: group_name, delete_history: false }); pendingLeaveGroup = null; }); }
+            });
+
+            socket.on('group members list', (data) => {
+                const { group_name, members, owner_id } = data;
+                membersCountBadge.textContent = `(${members.length}人)`;
+                membersList.innerHTML = '';
+                const isOwner = userId === owner_id;
+                members.forEach(member => {
+                    const li = document.createElement('li');
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = `member-status ${member.online ? 'online' : 'offline'}`;
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'member-info';
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'member-name';
+                    nameSpan.textContent = member.username;
+                    infoDiv.appendChild(nameSpan);
+                    li.appendChild(statusSpan);
+                    li.appendChild(infoDiv);
+                    const actionDiv = document.createElement('div');
+                    actionDiv.className = 'member-actions';
+                    if (member.is_owner) {
+                        const badge = document.createElement('span');
+                        badge.className = 'member-badge owner';
+                        badge.textContent = '群主';
+                        actionDiv.appendChild(badge);
+                    } else if (isOwner) {
+                        const kickBtn = document.createElement('button');
+                        kickBtn.className = 'kick-member-btn';
+                        kickBtn.textContent = '踢出';
+                        kickBtn.title = '踢出该成员';
+                        kickBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            showConfirmDialog('踢出成员', `确定要将 "${member.username}" 踢出群聊吗？`, () => {
+                                socket.emit('kick group member', { group_name: group_name, username: member.username });
+                            });
+                        });
+                        actionDiv.appendChild(kickBtn);
+                    }
+                    li.appendChild(actionDiv);
+                    if (member.username !== username) {
+                        li.style.cursor = 'pointer';
+                        li.addEventListener('click', () => { hideMembersModal(); socket.emit('start private chat', { username: member.username }); });
+                    }
+                    membersList.appendChild(li);
+                });
+            });
+
+            socket.on('kick success', (data) => { if (currentChat.type === 'group' && currentChat.name === data.group_name) socket.emit('get group members', { group_name: data.group_name }); });
+
+            socket.on('kicked from group', (data) => {
+                const { group_name, kicked_by } = data;
+                const groupElement = document.querySelector(`#group-list li[data-groupname='${group_name}']`);
+                if (groupElement) groupElement.remove();
+                if (currentChat.type === 'group' && currentChat.name === group_name) { switchChat('general'); showAlert(`您已被 ${kicked_by} 踢出群聊 "${group_name}"`, '被踢出群聊'); }
+                const roomName = 'group-' + group_name;
+                if (chatHistories[roomName]) delete chatHistories[roomName];
+            });
+
+            socket.on('member kicked', (data) => { console.log(`${data.username} 被 ${data.kicked_by} 踢出了群聊 ${data.group_name}`); });
+            socket.on('became group owner', (data) => { showAlert(data.message, '群主变更'); });
+
+            socket.on('group history', (data) => {
+                const { room, history } = data;
+                chatHistories[room] = history;
+                if (currentChat.room === room) { messagesDiv.innerHTML = ''; history.forEach(msg => displayMessage(msg)); }
+            });
+
+            socket.on('group message', (msg) => {
+                if (!chatHistories[msg.room]) chatHistories[msg.room] = [];
+                chatHistories[msg.room].push(msg);
+                if (currentChat.type === 'group' && currentChat.room === msg.room) displayMessage(msg);
+                else if (msg.username !== username) {
+                    groupUnreadCounts[msg.room] = (groupUnreadCounts[msg.room] || 0) + 1;
+                    updateUnreadBadges();
+                }
+            });
+
+            socket.on('error', (data) => { showAlert(data.message, '错误'); });
+
+            socket.on('message updated', (updatedMsg) => {
+                const messageElement = document.querySelector(`.message[data-id='${updatedMsg.id}']`);
+                if (messageElement) {
+                    messageElement.classList.add('recalled');
+                    const replyContainer = messageElement.querySelector('.reply');
+                    if (replyContainer) replyContainer.remove();
+                    const contentDiv = messageElement.querySelector('.content-bubble > div:not(.reply)');
+                    if (contentDiv) {
+                        contentDiv.textContent = updatedMsg.text;
+                        const imageEl = messageElement.querySelector('.chat-image');
+                        if (imageEl) imageEl.remove();
+                    } else {
+                        const imageEl = messageElement.querySelector('.chat-image');
+                        if (imageEl) { const contentBubble = messageElement.querySelector('.content-bubble'); imageEl.remove(); const newTextDiv = document.createElement('div'); newTextDiv.textContent = updatedMsg.text; contentBubble.appendChild(newTextDiv); }
+                    }
+                    const actionsContainer = messageElement.querySelector('.message-actions');
+                    if (actionsContainer) actionsContainer.remove();
+                }
+                for (const room in chatHistories) {
+                    const history = chatHistories[room];
+                    const msgIndex = history.findIndex(m => m.id === updatedMsg.id);
+                    if (msgIndex > -1) { history[msgIndex] = updatedMsg; break; }
+                }
+            });
+
+            socket.on('connect_error', (err) => { console.error('Connection failed:', err.message); });
+
+            // --- Core Functions ---
+            function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+            function addToPrivateList(targetUser, saveToServer = true) {
+                if (privateChats.find(u => u.username === targetUser.username)) { updatePrivateListStatus(); return; }
+                privateChats.push(targetUser);
+                renderPrivateList();
+                if (saveToServer) socket.emit('add private contact', { username: targetUser.username });
+            }
+
+            function renderPrivateList() {
+                privateList.innerHTML = '';
+                privateChats.forEach(user => {
+                    const li = document.createElement('li');
+                    li.dataset.username = user.username;
+                    li.dataset.userId = user.id;
+                    const isOnline = onlineUsers.includes(user.username);
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = `user-status ${isOnline ? 'online' : 'offline'}`;
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'user-name';
+                    nameSpan.textContent = user.username;
+                    const badgeSpan = document.createElement('span');
+                    badgeSpan.className = 'unread-badge hidden';
+                    badgeSpan.textContent = '0';
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-private-btn';
+                    deleteBtn.textContent = '×';
+                    deleteBtn.title = '移除私聊';
+                    deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); removeFromPrivateList(user.username); });
+                    li.appendChild(statusSpan);
+                    li.appendChild(nameSpan);
+                    li.appendChild(badgeSpan);
+                    li.appendChild(deleteBtn);
+                    li.addEventListener('click', () => { socket.emit('start private chat', { username: user.username }); });
+                    privateList.appendChild(li);
+                });
+            }
+
+            function removeFromPrivateList(targetUsername) {
+                socket.emit('remove private contact', { username: targetUsername });
+                if (currentChat.type === 'private' && currentChat.targetUser && currentChat.targetUser.username === targetUsername) switchChat('general');
+            }
+
+            function updatePrivateListStatus() {
+                privateList.querySelectorAll('li').forEach(li => {
+                    const uname = li.dataset.username;
+                    const statusEl = li.querySelector('.user-status');
+                    if (statusEl) { const isOnline = onlineUsers.includes(uname); statusEl.className = `user-status ${isOnline ? 'online' : 'offline'}`; }
+                });
+            }
+
+            function addGroupToList(groupName) {
+                if (document.querySelector(`#group-list li[data-groupname='${groupName}']`)) return;
+                const li = document.createElement('li');
+                li.dataset.groupname = groupName;
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'group-icon';
+                iconSpan.textContent = '#';
+                const groupNameSpan = document.createElement('span');
+                groupNameSpan.className = 'group-name';
+                groupNameSpan.textContent = groupName;
+                const badgeSpan = document.createElement('span');
+                badgeSpan.className = 'unread-badge hidden';
+                badgeSpan.textContent = '0';
+                const leaveBtn = document.createElement('button');
+                leaveBtn.className = 'delete-group-btn';
+                leaveBtn.textContent = '×';
+                leaveBtn.title = '退出群聊';
+                leaveBtn.addEventListener('click', (e) => { e.stopPropagation(); pendingLeaveGroup = groupName; socket.emit('check group members', { group_name: groupName }); });
+                li.appendChild(iconSpan);
+                li.appendChild(groupNameSpan);
+                li.appendChild(badgeSpan);
+                li.appendChild(leaveBtn);
+                li.addEventListener('click', () => { socket.emit('join group', { group_name: groupName }); switchChat('group', 'group-' + groupName, groupName); });
+                groupList.appendChild(li);
+            }
+
+            function validateUsername(name) {
+                if (!name || name.trim().length === 0) return { valid: false, message: '用户名不能为空' };
+                name = name.trim();
+                if (name.length > 20) return { valid: false, message: '用户名不能超过20个字符' };
+                const dangerousChars = ['<', '>', '&', '"', "'", '/', '\\', '\n', '\r', '\t'];
+                for (const char of dangerousChars) { if (name.includes(char)) return { valid: false, message: '用户名包含非法字符' }; }
+                return { valid: true, name: name };
+            }
+
+            function handleRecallMessage(event) {
+                const messageId = event.target.dataset.id;
+                if (messageId && username) socket.emit('recall message', { id: messageId });
+            }
+
+            function handleLogin() {
+                const name = usernameInput.value.trim();
+                const validation = validateUsername(name);
+                if (!validation.valid) { showAlert(validation.message, '登录失败'); return; }
+                username = validation.name;
+                localStorage.setItem('chatUsername', username);
+                showChat();
+            }
+
+            function handleLogout() {
+                localStorage.removeItem('chatUsername');
+                localStorage.removeItem('sessionToken');
+                username = '';
+                chatContainer.classList.add('hidden');
+                loginContainer.classList.remove('hidden');
+                window.location.reload();
+            }
+
+            function showChat() {
+                loginContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                welcomeMessage.textContent = `欢迎, ${username}!`;
+                sidebarWelcome.textContent = username;
+                messageInput.focus();
+                socket.emit('login', { username: username });
+            }
+
+            function handleSendMessage() {
+                const text = messageInput.value.trim();
+                if (!text || !username) return;
+                const messageData = { text: text, replyTo: replyToMessage };
+                if (currentChat.type === 'general') socket.emit('chat message', messageData);
+                else if (currentChat.type === 'group') { messageData.room = currentChat.room; socket.emit('group message', messageData); }
+                else if (currentChat.type === 'private') { messageData.room = currentChat.room; socket.emit('private message', messageData); }
+                messageInput.value = '';
+                cancelReply();
+                messageInput.focus();
+                if (currentChat.type !== 'general') socket.emit('typing', { room: currentChat.room, typing: false });
+            }
+
+            function displayMessage(msg) {
+                const messageEl = document.createElement('div');
+                messageEl.classList.add('message');
+                if (msg.username === username) messageEl.classList.add('own');
+                messageEl.dataset.id = msg.id;
+                messageEl.dataset.username = msg.username;
+                messageEl.dataset.text = msg.text || '[Image]';
+                if (msg.image) messageEl.dataset.imageUrl = msg.image;
+
+                let repliedMessageHTML = '';
+                if (msg.replyTo) {
+                    const repliedUsername = escapeHtml(msg.replyTo.username) || '...';
+                    const replyContent = msg.replyTo.image
+                        ? `<img src="${escapeHtml(msg.replyTo.image)}" class="reply-image-thumb" alt="Replied image">`
+                        : escapeHtml(msg.replyTo.text || '[Image]');
+                    repliedMessageHTML = `<div class="reply"><strong>回复 ${repliedUsername}</strong>: ${replyContent}</div>`;
+                }
+
+                const time = msg.timestamp;
+                const contentHTML = msg.image
+                    ? `<img src="${escapeHtml(msg.image)}" alt="User image" class="chat-image">`
+                    : `<div>${escapeHtml(msg.text)}</div>`;
+
+                messageEl.innerHTML = `
+                    <div class="info">
+                        <span class="username">${escapeHtml(msg.username)}</span>
+                        <span class="timestamp">${escapeHtml(time)}</span>
+                    </div>
+                    <div class="content-bubble">
+                        ${repliedMessageHTML}
+                        ${contentHTML}
+                    </div>
+                    <div class="message-actions">
+                        <button class="reply-btn" title="引用">↩</button>
+                    </div>
+                `;
+
+                messagesDiv.appendChild(messageEl);
+
+                const replyBtn = messageEl.querySelector('.reply-btn');
+                if (replyBtn) replyBtn.addEventListener('click', () => setReply(msg.id));
+
+                if (msg.username === username && !msg.recalled) {
+                    const actionsContainer = messageEl.querySelector('.message-actions');
+                    const recallBtn = document.createElement('button');
+                    recallBtn.className = 'recall-btn';
+                    recallBtn.title = '撤回';
+                    recallBtn.innerHTML = '✕';
+                    recallBtn.dataset.id = msg.id;
+                    recallBtn.addEventListener('click', handleRecallMessage);
+                    actionsContainer.appendChild(recallBtn);
+                }
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                const imgEl = messageEl.querySelector('.chat-image');
+                if (imgEl) imgEl.addEventListener('click', () => { imageModal.classList.remove('hidden'); modalImage.src = imgEl.src; });
+            }
+
+            function setReply(id) {
+                const messageToReplyEl = document.querySelector(`.message[data-id='${id}']`);
+                if (messageToReplyEl) {
+                    replyToMessage = { id: id, username: messageToReplyEl.dataset.username, text: messageToReplyEl.dataset.text, image: messageToReplyEl.dataset.imageUrl || null };
+                    let previewContent = '';
+                    if (replyToMessage.image) previewContent = `<img src="${escapeHtml(replyToMessage.image)}" class="reply-image-thumb" alt="Replying to image">`;
+                    else previewContent = escapeHtml(replyToMessage.text);
+                    replyText.innerHTML = `回复 ${escapeHtml(replyToMessage.username)}: ${previewContent}`;
+                    replyPreview.classList.remove('hidden');
+                    messageInput.focus();
+                }
+            }
+
+            function cancelReply() { replyToMessage = null; replyPreview.classList.add('hidden'); }
+
+            function sendImageFile(file) {
+                if (!file || !file.type.startsWith('image/')) return;
+                const formData = new FormData();
+                formData.append('file', file);
+                const xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', (event) => { if (event.lengthComputable) progressBar.style.width = (event.loaded / event.total) * 100 + '%'; });
+                xhr.addEventListener('load', () => {
+                    progressContainer.classList.add('hidden');
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        const messageData = { image: response.url, thumbnail: response.thumbnail, replyTo: replyToMessage };
+                        if (currentChat.type === 'general') socket.emit('chat message', messageData);
+                        else if (currentChat.type === 'group') { messageData.room = currentChat.room; socket.emit('group message', messageData); }
+                        else if (currentChat.type === 'private') { messageData.room = currentChat.room; socket.emit('private message', messageData); }
+                        cancelReply();
+                    } else { showAlert('图片上传失败', '上传错误'); }
+                });
+                xhr.addEventListener('error', () => { progressContainer.classList.add('hidden'); showAlert('图片上传出错', '上传错误'); });
+                xhr.open('POST', '/upload', true);
+                progressContainer.classList.remove('hidden');
+                progressBar.style.width = '0%';
+                xhr.send(formData);
+            }
+
+            function handleImageUpload(e) { const file = e.target.files[0]; sendImageFile(file); e.target.value = null; }
+
+            // --- Image Modal Logic ---
+            let currentScale = 1;
+            const scaleStep = 0.1;
+            let isDragging = false;
+            let startX, startY, posX = 0, posY = 0;
+
+            function updateTransform() { modalImage.style.transform = `translate(${posX}px, ${posY}px) scale(${currentScale})`; }
+
+            closeModal.addEventListener('click', () => { imageModal.classList.add('hidden'); currentScale = 1; posX = 0; posY = 0; updateTransform(); });
+            imageModal.addEventListener('click', (e) => { if (e.target === imageModal) { imageModal.classList.add('hidden'); currentScale = 1; posX = 0; posY = 0; updateTransform(); } });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !imageModal.classList.contains('hidden')) { imageModal.classList.add('hidden'); currentScale = 1; posX = 0; posY = 0; updateTransform(); } });
+            imageModal.addEventListener('wheel', (e) => { e.preventDefault(); if (e.deltaY < 0) currentScale += scaleStep; else currentScale = Math.max(0.1, currentScale - scaleStep); updateTransform(); });
+            modalImage.addEventListener('mousedown', (e) => { e.preventDefault(); isDragging = true; startX = e.clientX - posX; startY = e.clientY - posY; modalImage.classList.add('grabbing'); });
+            window.addEventListener('mousemove', (e) => { if (isDragging) { e.preventDefault(); posX = e.clientX - startX; posY = e.clientY - startY; updateTransform(); } });
+            window.addEventListener('mouseup', () => { isDragging = false; modalImage.classList.remove('grabbing'); });
+
+            function switchChat(type, room = 'general', name = '公共聊天室', targetUser = null) {
+                if (isMobile) closeSidebar();
+                if (currentChat.type !== 'general' && currentChat.room !== room) socket.emit('typing', { room: currentChat.room, typing: false });
+                currentChat = { type, room, name, targetUser };
+                chatTitle.textContent = name;
+                messagesDiv.innerHTML = '';
+                typingIndicator.classList.add('hidden');
+                // Clear unread for entered chat
+                if (type === 'general') { publicUnreadCount = 0; }
+                else if (type === 'group') { delete groupUnreadCounts[room]; }
+                updateUnreadBadges();
+                if (chatHistories[room]) chatHistories[room].forEach(msg => displayMessage(msg));
+                document.querySelectorAll('#user-list li, #group-list li, #private-list li').forEach(li => li.classList.remove('active'));
+                if (type === 'group') { const groupNode = document.querySelector(`#group-list li[data-groupname='${name}']`); if (groupNode) groupNode.classList.add('active'); }
+                else if (type === 'private' && targetUser) {
+                    const privateNode = document.querySelector(`#private-list li[data-username='${targetUser.username}']`); if (privateNode) privateNode.classList.add('active');
+                    const userNode = document.querySelector(`#user-list li[data-username='${targetUser.username}']`); if (userNode) userNode.classList.add('active');
+                }
+                if (type === 'general') generalChatBtn.classList.add('hidden'); else generalChatBtn.classList.remove('hidden');
+                if (type === 'group') viewMembersBtn.classList.remove('hidden'); else viewMembersBtn.classList.add('hidden');
+                updateChatSubtitle();
+                if (type === 'private' && room) socket.emit('mark messages read', { room });
+                if (notificationManager.isPageVisible) notificationManager.stopTitleFlash();
+                messageInput.focus();
+            }
+
+            function updateChatSubtitle() {
+                if (currentChat.type === 'private' && currentChat.targetUser) {
+                    const isOnline = onlineUsers.includes(currentChat.targetUser.username);
+                    chatSubtitle.textContent = isOnline ? '在线' : '离线';
+                    chatSubtitle.className = isOnline ? 'online' : 'offline';
+                } else if (currentChat.type === 'group') {
+                    chatSubtitle.textContent = '';
+                } else {
+                    chatSubtitle.textContent = `${onlineUsers.length} 人在线`;
+                    chatSubtitle.className = '';
+                }
+            }
+
+            function updateUnreadBadges() {
+                // Private chat badges
+                document.querySelectorAll('#private-list li').forEach(li => {
+                    const badge = li.querySelector('.unread-badge');
+                    if (!badge) return;
+                    const uid = li.dataset.userId;
+                    const count = (unreadCounts.private && unreadCounts.private[uid]) || 0;
+                    if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.classList.remove('hidden'); }
+                    else { badge.classList.add('hidden'); }
+                });
+                // Group chat badges
+                document.querySelectorAll('#group-list li').forEach(li => {
+                    const badge = li.querySelector('.unread-badge');
+                    if (!badge) return;
+                    const gname = li.dataset.groupname;
+                    const room = 'group-' + gname;
+                    const count = groupUnreadCounts[room] || 0;
+                    if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.classList.remove('hidden'); }
+                    else { badge.classList.add('hidden'); }
+                });
+                // Section header indicators
+                const privateTotal = Object.values(unreadCounts.private || {}).reduce((a, b) => a + b, 0);
+                const groupTotal = Object.values(groupUnreadCounts).reduce((a, b) => a + b, 0);
+                updateSectionBadge('private', privateTotal);
+                updateSectionBadge('groups', groupTotal);
+                updateSectionBadge('users', publicUnreadCount);
+            }
+
+            function updateSectionBadge(sectionName, count) {
+                const header = document.querySelector(`.section-header[data-section="${sectionName}"] h3`);
+                if (!header) return;
+                let dot = header.querySelector('.section-unread-dot');
+                if (count > 0) {
+                    if (!dot) { dot = document.createElement('span'); dot.className = 'section-unread-dot'; header.appendChild(dot); }
+                    dot.textContent = count > 99 ? '99+' : count;
+                } else if (dot) { dot.remove(); }
+            }
+        });
+    </script>
+</body>
+</html>
