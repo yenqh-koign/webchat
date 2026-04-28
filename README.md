@@ -86,19 +86,6 @@ EMAIL_VERIFICATION_ENABLED=true
 
 如果不需要邮箱验证码，可以将 `EMAIL_VERIFICATION_ENABLED` 设置为 `false`。
 
-## 数据与上传文件
-
-以下内容只保留在本地，不上传到 GitHub：
-
-- `.env`
-- `chat.db`
-- `instance/`
-- `uploads/`
-- `static/uploads/`
-- `build/`
-- `dist/`
-- `__pycache__/`
-
 ## 打包
 
 项目保留了 PyInstaller 配置文件，可按需安装 PyInstaller 后构建可执行文件：
@@ -108,4 +95,4 @@ pip install pyinstaller
 pyinstaller app.spec
 ```
 
-构建产物会生成在 `dist/` 和 `build/` 中，这些目录不会提交到 GitHub。
+构建产物会生成在 `dist/` 和 `build/` 中。
